@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSChip — Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    h2 { font-size: 1rem; font-weight: 600; margin-bottom: 10px; color: #475569; }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    section {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+
+    /* ── Log ── */
+    #log {
+      font-size: 12px;
+      font-family: monospace;
+      background: #0f172a;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 12px 14px;
+      height: 130px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+    }
+    #log .entry { line-height: 1.5; }
+    #log .entry b { color: #7dd3fc; }
+
+    /* ── Form ── */
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .form-row label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    .form-row input,
+    .form-row select {
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-row input:focus,
+    .form-row select:focus { border-color: #6366f1; }
+
+    button.primary {
+      padding: 7px 16px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.primary:hover { background: #4f46e5; }
+
+    button.secondary {
+      padding: 7px 14px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.secondary:hover { background: #e2e8f0; }
+
+    .hint {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>JSChip</h1>
+  <p class="subtitle">Customizable chip library — plain JavaScript</p>
+
+  <!-- ── Chip playground ── -->
+  <section>
+    <h2>Chip Playground</h2>
+
+    <div class="form-row">
+      <label>
+        Label
+        <input id="inp-label" type="text" value="My Chip" placeholder="Chip label" />
+      </label>
+
+      <label>
+        Level
+        <select id="inp-level">
+          <option value="default">default</option>
+          <option value="info" selected>info</option>
+          <option value="warning">warning</option>
+          <option value="error">error</option>
+          <option value="success">success</option>
+          <option value="disabled">disabled</option>
+        </select>
+      </label>
+
+      <label>
+        Icon <small>(emoji / text)</small>
+        <input id="inp-icon" type="text" value="" placeholder="e.g. 🏷️" style="width:90px" />
+      </label>
+
+      <label>
+        Closable
+        <select id="inp-closable">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+      </label>
+
+      <label>
+        Draggable
+        <select id="inp-draggable">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+      </label>
+
+      <button class="primary" id="btn-add">+ Add Chip</button>
+      <button class="secondary" id="btn-clear">Clear All</button>
+    </div>
+
+    <div id="container-main"></div>
+    <p class="hint">Drag chips to reorder them. Click × to remove. Disabled chips ignore interactions.</p>
+  </section>
+
+  <!-- ── Pre-seeded examples ── -->
+  <section>
+    <h2>All Levels — read-only reference</h2>
+    <div id="container-ref"></div>
+  </section>
+
+  <!-- ── Event log ── -->
+  <section>
+    <h2>Event Log</h2>
+    <div id="log"></div>
+  </section>
+
+  <script src="jschips.js"></script>
+  <script>
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    const log = (() => {
+      const el = document.getElementById('log');
+      return (event, msg) => {
+        const entry = document.createElement('div');
+        entry.className = 'entry';
+        entry.innerHTML = `<b>${event}</b> — ${msg}`;
+        el.prepend(entry);
+      };
+    })();
+
+    // ── Main instance ─────────────────────────────────────────────────────────
+    const chips = new JSChip('#container-main', { closable: true, draggable: true });
+
+    chips
+      .on('chip:create',    ({ chip }) =>
+        log('chip:create',   `id=${chip.id} label="${chip.label}" level=${chip.level}`))
+      .on('chip:remove',    ({ chip }) =>
+        log('chip:remove',   `id=${chip.id} label="${chip.label}"`))
+      .on('chip:click',     ({ chip }) =>
+        log('chip:click',    `id=${chip.id} label="${chip.label}" level=${chip.level}`))
+      .on('chip:dragstart', ({ chip }) =>
+        log('chip:dragstart',`id=${chip.id} label="${chip.label}"`))
+      .on('chip:dragend',   ({ chip }) =>
+        log('chip:dragend',  `id=${chip.id}`))
+      .on('chip:drop',      ({ source, target }) =>
+        log('chip:drop',     `"${source.label}" dropped onto "${target.label}"`));
+
+    // Pre-seed a few chips
+    chips.createMany([
+      { label: 'Frontend',  level: 'info',    icon: '💻' },
+      { label: 'Bug',       level: 'error',   icon: '🐛' },
+      { label: 'Review',    level: 'warning', icon: '⚠️' },
+      { label: 'Merged',    level: 'success', icon: '✅' },
+      { label: 'Archived',  level: 'disabled'             },
+    ]);
+
+    // ── Add-chip form ─────────────────────────────────────────────────────────
+    document.getElementById('btn-add').addEventListener('click', () => {
+      const label    = document.getElementById('inp-label').value.trim() || 'Chip';
+      const level    = document.getElementById('inp-level').value;
+      const icon     = document.getElementById('inp-icon').value.trim() || null;
+      const closable = document.getElementById('inp-closable').value === 'true';
+      const draggable= document.getElementById('inp-draggable').value === 'true';
+      chips.create({ label, level, icon, closable, draggable });
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      chips.clear();
+    });
+
+    // Allow pressing Enter on the label field to add
+    document.getElementById('inp-label').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-add').click();
+    });
+
+    // ── Reference row (all levels, non-interactive) ───────────────────────────
+    const ref = new JSChip('#container-ref', { closable: false, draggable: false });
+    ref.createMany([
+      { label: 'Default',  level: 'default'  },
+      { label: 'Info',     level: 'info'     },
+      { label: 'Warning',  level: 'warning'  },
+      { label: 'Error',    level: 'error'    },
+      { label: 'Success',  level: 'success'  },
+      { label: 'Disabled', level: 'disabled' },
+    ]);
+  </script>
+</body>
+</html>

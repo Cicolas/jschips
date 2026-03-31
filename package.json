@@ -1,0 +1,12 @@
+{
+  "name": "jschips",
+  "version": "1.0.0",
+  "description": "Chip/tag UI library",
+  "main": "jschips.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
